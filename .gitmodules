@@ -1,0 +1,3 @@
+[submodule "Bootstrapped-Nonparmetrics"]
+	path = Bootstrapped-Nonparmetrics
+	url = git@github.com:pkadambi/Bootstrapped-Nonparmetrics.git
