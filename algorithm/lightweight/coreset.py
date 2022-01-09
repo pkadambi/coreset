@@ -31,5 +31,5 @@ class LightweightCoreset:
     @utils.timeit
     def compute(self):
         self._compute_m()
-        print("coreset size: ", self.m)
+#         print("coreset size: ", self.m)
         return self._compute_coreset()

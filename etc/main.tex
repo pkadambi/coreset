@@ -1,0 +1,108 @@
+\documentclass[a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english, polish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{indentfirst}
+\usepackage[nottoc,numbib]{tocbibind}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{titlesec}
+\usepackage{textcomp}
+\usepackage{titling}
+\usepackage{tikz}
+\usetikzlibrary{decorations.markings}
+\usepackage{xstring}
+\let\lll\undefined
+\usepackage{amssymb,amsthm,amsmath}
+\usepackage{mathtools}
+\mathtoolsset{showonlyrefs}
+\usepackage[unicode]{hyperref}
+\usepackage{booktabs}
+
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{dirtree}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Java,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+
+% \titleformat{\chapter}[display]
+%     {\Large\bfseries}
+%     {}
+%     {10pt}
+%     {\thechapter\scshape\bfseries}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries}
+  {}
+  {10pt}
+  {\Large\thechapter.\quad}
+
+\titleformat{\section}[display]
+  {\normalfont\bfseries}
+  {}
+  {10pt}
+  {\large\thesection.\quad}
+
+\titleformat{\subsection}[display]
+  {\normalfont\bfseries}
+  {}
+  {0pt}
+  {\thesubsection.\quad}
+
+% \titleformat{\section}[display]
+%     {\normalfont\bfseries}
+%     {\thesection }
+%     {0pt}
+%     {\large\thesection.\quad}
+
+% \titleformat{\subsection}[display]
+%     {\normalfont\bfseries}
+%     {\thesubsection}
+%     {0pt}
+%     {\thesubsection.\quad}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definicja}[chapter]    
+
+\theoremstyle{plain}
+\newtheorem{thm}{Twierdzenie}[chapter]
+
+\newtheorem{lemma}{Lemat}[chapter]
+\newtheorem{sublemma}{Lemma}[chapter]
+
+\begin{document}
+\input{00titlepage}
+\input{01abstract}
+\tableofcontents
+\input{02intro}
+\input{03preliminaries.tex}
+\input{04lightweight.tex}
+\input{05geo.tex}
+\input{06analysis.tex}
+\bibliographystyle{acm}
+\bibliography{bibliography}
+\end{document}

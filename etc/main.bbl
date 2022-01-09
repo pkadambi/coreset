@@ -1,0 +1,97 @@
+\begin{thebibliography}{10}
+
+\bibitem{article}
+{\sc Aloise, D., Deshpande, A., Hansen, P., and Popat, P.}
+\newblock Np-hardness of euclidean sum-of-squares clustering.
+\newblock {\em Machine Learning 75\/} (05 2009), 245--248.
+
+\bibitem{10.1145/293347.293348}
+{\sc Arya, S., Mount, D.~M., Netanyahu, N.~S., Silverman, R., and Wu, A.~Y.}
+\newblock An optimal algorithm for approximate nearest neighbor searching fixed
+  dimensions.
+\newblock {\em J. ACM 45}, 6 (Nov. 1998), 891–923.
+
+\bibitem{10.1145/380752.380755}
+{\sc Arya, V., Garg, N., Khandekar, R., Meyerson, A., Munagala, K., and Pandit,
+  V.}
+\newblock Local search heuristic for k-median and facility location problems.
+\newblock In {\em Proceedings of the Thirty-Third Annual ACM Symposium on
+  Theory of Computing\/} (New York, NY, USA, 2001), STOC ’01, Association for
+  Computing Machinery, p.~21–29.
+
+\bibitem{bachem2017scalable}
+{\sc Bachem, O., Lucic, M., and Krause, A.}
+\newblock Scalable k -means clustering via lightweight coresets.
+\newblock In {\em Proceedings of the 24th ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining\/} (New York, NY, USA, 2018), KDD '18,
+  Association for Computing Machinery, p.~1119–1127.
+
+\bibitem{chazelle_2000}
+{\sc Chazelle, B.}
+\newblock {\em The Discrepancy Method: Randomness and Complexity}.
+\newblock Cambridge University Press, 2000.
+
+\bibitem{doi:10.1137/S0036144599352836}
+{\sc Du, Q., Faber, V., and Gunzburger, M.}
+\newblock Centroidal voronoi tessellations: Applications and algorithms.
+\newblock {\em SIAM Review 41}, 4 (1999), 637--676.
+
+\bibitem{10.1145/62212.62255}
+{\sc Feder, T., and Greene, D.}
+\newblock Optimal algorithms for approximate clustering.
+\newblock In {\em Proceedings of the Twentieth Annual ACM Symposium on Theory
+  of Computing\/} (New York, NY, USA, 1988), STOC ’88, Association for
+  Computing Machinery, p.~434–444.
+
+\bibitem{Gonzalez1985ClusteringTM}
+{\sc Gonzalez, T.~F.}
+\newblock Clustering to minimize the maximum intercluster distance.
+\newblock {\em Theor. Comput. Sci. 38\/} (1985), 293--306.
+
+\bibitem{10.5555/3116656.3116964}
+{\sc Har-Peled, S.}
+\newblock Clustering motion.
+\newblock {\em Discrete Comput. Geom. 31}, 4 (Mar. 2004), 545–565.
+
+\bibitem{10.1145/1007352.1007400}
+{\sc Har-Peled, S., and Mazumdar, S.}
+\newblock On coresets for k-means and k-median clustering.
+\newblock In {\em Proceedings of the Thirty-Sixth Annual ACM Symposium on
+  Theory of Computing\/} (New York, NY, USA, 2004), STOC '04, Association for
+  Computing Machinery, p.~291–300.
+
+\bibitem{Arya2004LocalSH}
+{\sc Kanungo, T., Mount, D.~M., Netanyahu, N.~S., Piatko, C.~D., Silverman, R.,
+  and Wu, A.~Y.}
+\newblock A local search approximation algorithm for k-means clustering.
+\newblock {\em Computational Geometry 28}, 2 (2004), 89 -- 112.
+\newblock Special Issue on the 18th Annual Symposium on Computational Geometry.
+
+\bibitem{LI2001516}
+{\sc Li, Y., Long, P.~M., and Srinivasan, A.}
+\newblock Improved bounds on the sample complexity of learning.
+\newblock {\em Journal of Computer and System Sciences 62}, 3 (2001), 516 --
+  527.
+
+\bibitem{1056489}
+{\sc {Lloyd}, S.}
+\newblock Least squares quantization in pcm.
+\newblock {\em IEEE Transactions on Information Theory 28}, 2 (1982), 129--137.
+
+\bibitem{Matousek99onapproximate}
+{\sc Matousek, J.}
+\newblock On approximate geometric k-clustering.
+\newblock {\em Discrete and Computational Geometry 24\/} (2000), 61--84.
+
+\bibitem{DBLP:journals/ki/MunteanuS18}
+{\sc Munteanu, A., and Schwiegelshohn, C.}
+\newblock Coresets-methods and history: {A} theoreticians design pattern for
+  approximation and streaming algorithms.
+\newblock {\em K{\"{u}}nstliche Intell. 32}, 1 (2018), 37--53.
+
+\bibitem{pisier_1989}
+{\sc Pisier, G.}
+\newblock {\em The Volume of Convex Bodies and Banach Space Geometry}.
+\newblock Cambridge Tracts in Mathematics. Cambridge University Press, 1989.
+
+\end{thebibliography}

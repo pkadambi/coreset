@@ -1,0 +1,68 @@
+\section{Algorytm Gonzalez'a}
+
+Pierwszy algorytm, który opiszemy to \textit{Farthest point algorithm} z pracy \cite{Gonzalez1985ClusteringTM}.
+Jest to pierwszy algorytm aproksymacyjny rozwiązujący problem k-centrów ze współczynnikiem aproksymacji równym 2.
+Jego złożoność to $O(nk)$, gdzie $n$ jest liczbą punktów danych na wejściu.
+Algorytm Gonzaleza jest nam potrzebny, ponieważ w rozdziale 4.2, w którym budujemy kratę wykładniczą istotnie korzystamy z rozwiązania problemu $k$-centrów.
+\\~\\
+Na potrzeby tego rozdziału wprowadzimy kilka definicji.
+\begin{definition}
+    \emph{Problem k-centrów.} Niech $X$ będzie skończonym zbiórem punktów z $\mathbb{R}^{d}$. 
+    Dla danego $X$ chcemy znaleźć zbiór $k \in \mathbb{N}$ punktów $Q \subset \mathbb{R}^{d}$, który minimalizuje funkcję $\rho_{X}(Q)$ zdefiniowaną następująco:
+    \begin{equation}
+        \rho_{X}(Q) = \max_{x \in X} \min_{q \in Q} \| x - q \|
+    \end{equation}
+\end{definition}
+
+\begin{definition}
+    Podział zbioru punktów na $k \in \mathbb{N}$ zbiorów $B_{1},\dots,B_{k}$, nazywamy \emph{k-podziałem}.
+\end{definition}
+
+\begin{definition}
+    Zbiory $B_{i}$ k-podziału nazywamy \emph{klastrami}.
+    W każdym klastrze wyrózniamy jeden punkt nazywając go \emph{środkiem}.
+\end{definition}
+
+\noindent
+Niech $X \subset \mathbb{R}^{d}$ będzie zbiorem, na którym chcemy rozwiązać problem $k$-centrów.
+Zakładamy, że $|X| > k$ ponieważ w przeciwnym przypadku problem $k$-centrów jest trywialnie rozwiązywalny.
+Niech $\rho_{opt}^{k}(X)$ oznacza optymalne rozwiązanie problemu $k$-centrów dla zbioru $X$ oraz niech $T^{*}$ będzie zbiorem $k$ elementowym realizującym $\rho_{opt}^{k}(X)$.
+\\~\\
+Algorytm Gonzaleza rozwiązujący problem $k$-centrów składa się z fazy inicjalizującej oraz $k-1$ faz powiększających.
+W fazie inicjalizującej wszystkie elementy zbioru $X$ są przypisana do zbioru $B_{1}$, który jest pierwszym klastrem.
+Jeden z elementów tego zbioru oznaczamy jako $(t_{1})$ - środek klastra $B_{1}$.
+Wybór tego elementu jest losowy.
+Podczas $j$ fazy powiększającej, niektóre elementy z istniejącego podziału na klastry $B_{1}, \dots, B_{j}$ trafiają do nowego zbioru $B_{j+1}$.
+Dodatkowo jeden z elementów nowego zbioru będzie oznaczony jako $(t_{j+1})$ - środek klastra $B_{j+1}$.
+Budowę zbioru $B_{j+1}$ rozpoczynamy od wyboru punktu $v$, który należy do jednego ze zbiorów $B_{1}, \dots, B_{j}$ oraz jego odległość do środka klastra, do którego należy jest największa spośród wszystkich punktów z $B_{1}, \dots, B_{j}$. 
+Taki punkt będzie oznaczony jako $(t_{j+1})$, czyli jest środkiem klastra $B_{j+1}$.
+Każdy punkt, dla którego dystans do $v$ jest nie większy niż dystans do środka klastru, w którym się znajduje zostaje przeniesiony do $B_{j+1}$.
+\begin{algorithm}
+    \floatname{algorithm}{Algorytm}
+    \caption{}
+\begin{algorithmic}
+    \State Algorytm na wejściu otrzymuje zbiór $X \in \mathbb{R}^{d}$.
+    \State Niech $T$ będzie szukanym zbiorem $k$-centrów.
+    \State Dla każdego punktu $p \notin T$, algorytm trzyma $neighbor(p)$, czyli najbliższy punkt w $T$ dla $p$ oraz $dist(p)$, czyli odległość od punktu $p$ do $neighbor(p)$.
+    \Procedure{Farthest point algorithm}{}
+        \State $T \leftarrow \emptyset$
+        \State $dist(p) \leftarrow \infty$ for all $p \in X$
+        \While{$|T| \leq k$}                    
+            \State $D \leftarrow max\{dist(p) | p \in X-T\}$
+            \State wybierz $v$ z $X-T$ tak, aby $dist(v) = D$
+            \State add $v$ to T
+            \State zaktualizuj $neighbor(p)$ oraz $dist(p)$ dla każdego $p \in X-T$
+        \EndWhile
+    \EndProcedure
+    \Return $T$
+\end{algorithmic}
+\end{algorithm}
+\\~\\
+Algorytm 2 buduje jakiś $k$-podział oraz zbiór środków klastrów $T$.
+Teraz pokażemy, że dla takiego $k$-podziału wartość funkcji celu $\rho_{X}(T)$ jest ograniczona przez $2 \cdot \rho_{X}(T^{*})$.
+\\~\\
+Niech $L=\rho_{X}(T)$ oraz niech $x_{0} \in T$ będzie punktem, dla którego wartość funkcji $\rho_{X}(T)$ osiągnęła maksimum.
+Z konstrukcji $k$-podziału wiemy, że zbiór $T\cup \{x_{0}\}$ zawiera $k+1$ punktów, gdzie każdy z nich jest odległy od siebie o co najmniej $L$.
+Zauważmy, że przynajmniej dla 2 punktów ze zbioru $T\cup \{x_{0}\}$, ich najkrótsza odległość do zbioru punktów $T^{*}$ będzie zrealizowana przez ten sam punkt $t \in T^{*}$.
+Zatem przynajmniej 2 punkty odległe od siebie o co najmniej $L$ są przyporządkowane do jednego punktu z $T^{*}$.
+Z nierówności trójkąta wynika, że $\rho_{X}(T^{*}) \geq \frac{L}{2}$, co z kolei implikuje, że $2\rho_{X}(T^{*}) \geq \rho_{X}(T)$.

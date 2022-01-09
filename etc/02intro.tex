@@ -1,0 +1,33 @@
+\chapter{Wstęp}
+\textit{More is more} to jedna z podstawowych doktryn związanych z szeroko rozumiałym Big Data.
+Więcej danych to więcej informacji, które analizujemy licząc na poznanie ukrytych zależności.
+W erze Big Data skalowalność rozwiązań jest szczególnie ważna, dlatego celem wielu naukowców jest dostarczenie kompromisu pomiędzy szczegółowością informacji a wymaganiami pamięciowymi.
+Tutaj warto zwrócić uwagę na dużą wartość takich rozwiązań w praktycznych zastosowaniach.
+
+\textit{Sketch-and-solve} to popularny paradygmat, który zakłada separacje algorytmu agregującego dane od właściwego algorytmu analizującego.
+Główną ideą jest redukcja danych tak aby rozmiar zbudowanego zbioru nie był zależny od rozmiaru wejściowych danych lub tylko \textit{trochę} od nich zależał.
+Następnie aplikowany jest właściwy algorytm, który jest mniej zależy od początkowego rozmiaru danych.
+W rezultacie wykonuje swoją pracę szybciej, a niekiedy nawet lepiej.
+Dodatkową zaletą jest fakt, że w większości przypadków nie jest konieczna modyfikacja algorytmu analizującego.
+
+Niestety w kontekście tego paradygmatu największym wyzwaniem jest znalezienie kompromisu pomiędzy stratą jakości danych a ich rozmiarem.
+To jak określamy charakterystykę ważnych informacji jest ściśle zależne od aplikacji danych.
+Coresety są strukturą algorytmiczną, która ma na celu indentyfikacje takich cech oraz określenie akceptowalnego kompromisu dla różnych funkcji celu.
+
+Mówiąc ogólniej, mamy na wejściu zbiór danych $A \subset U$, gdzie $U$ oznacza jakieś uniwersum, zbiór potencjalnych rozwiązań $C$ pewnego problemu oraz funkcję celu $f:P(U) \times C \rightarrow \mathbb{R}_{\geq0}$, gdzie $P(U)$ oznacza zbiór potęgowy dla uniwersum.
+Chcemy znaleźć istotnie mniejszy zbiór danych $S \subset U$, dla którego dla każdego potencjalnego rozwiązania $c \in C$ daje wartość $f(S, c)$ \textit{dobrze} aproksymującą $f(A,c)$.
+A dokładniej:
+\begin{equation}
+    |f(A,c) - f(S,c)| < \epsilon f(A,c)
+\end{equation}
+\noindent
+gdzie $\epsilon > 0$.
+
+Algorytmy budujące coresety są aplikowalne do wielu problemów klasteryzacji.
+W tej pracy skupimy się na konstrukcjach dla problemu $k$-means, który należy do klasy problemów \textit{NP-trudnych} \cite{article}.
+Najpopularniejszym algorytmem heurystycznym dla tego problemu jest algorytm Lloyd'a \cite{1056489}.
+Z uwagi na to, że złożoność algorytmu istotnie zależy od rozmiaru wejściowych danych, jest on idealnym kandydatem do optymalizacji poprzez odpowiednią konstrukcję coresetu.
+
+Rozdział 2 niniejszej pracy poświęcony jest wpowadzeniu potrzebnych definicji i pojęć.
+W rozdziale 3 opiszemy budowę \textit{lightweight coresetu} z pracy \cite{bachem2017scalable}.
+Następnie, w rozdziale 4 przedstawimy konstrukcję \textit{coresetu} bazującą na geomtrycznej dekompozycji problemu korzystając z badań \cite{DBLP:journals/ki/MunteanuS18}.
