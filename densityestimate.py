@@ -5,21 +5,21 @@ from numpy.linalg import norm
 ''' Generate Posterior Distribution '''
 
 def oracle_sinusoid_posterior(query):
-    if np.abs(query[0])>4 or np.abs(query[1])>4:
+    if np.abs(query[0])>6 or np.abs(query[1])>6:
         return Exception('Absolute value of each coordinate must be less than 4')
     
     if query[0]<-1:
         xpeicewise = (query[0] + 4)/2
-        posterior = np.cos(2 * np.pi * 2 * xpeicewise)
+        posterior = np.cos(2 * np.pi * 2 * (xpeicewise-.1))
         posterior = .4 * posterior + .5
     
     elif query[0]<=2:
         xpeicewise = (query[0] + 2)/2
-        posterior = np.cos(2 * np.pi * 2 * xpeicewise)
+        posterior = .5 * np.cos(2 * np.pi * 2 * xpeicewise)
         posterior = .2 * posterior + .5           
     
-    elif query[0]<=4:
-        posterior = -(query[0] - 4) * (.6-.4)/2 + .4
+    elif query[0]<=6:
+        posterior = -(query[0] - 6) * (.6-.4)/4 + .4
         
     return posterior
 

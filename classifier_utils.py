@@ -25,7 +25,7 @@ def train_classifier(xtrain, ytrain, classifier):
 #                             hidden_layer_sizes=(10, 10, 5), random_state=1, 
 #                             max_iter = 10000) 
         clf = MLPClassifier(solver='adam', alpha=1e-5, activation='relu',
-                            hidden_layer_sizes=(16, 32, 32, 16), random_state=1, 
+                            hidden_layer_sizes=(32, 32, 48, 32, 32), random_state=1, 
                             max_iter = 10000) 
     clf.fit(xtrain, ytrain)
     return clf
@@ -51,10 +51,6 @@ def get_isotonic_calibrator(yhat_uncalibrated, ycalib):
 def isotonic_calibrate(trained_calibrator, yhat):
     return trained_calibrator.predict(yhat)
 
-# TODO
-class CalibratedClassifier:
-    def __init__():
-        pass
 
 
 """ Metrics """
@@ -65,10 +61,13 @@ def accuracy(yhat, y):
 def mse(yhat, y):
     return np.mean((yhat - y) ** 2)
 
+#TODO: DEPRECATE THIS GARBAGE
 def xentropy(p, q, eps=1e-6):
     return -np.mean(np.sum(p * np.log(q + eps), axis=0))
 
 def evaluate_classifier(clf, xdata, ydata, score_fn):
+    tpreds = clf.predict(xdata)
+#     print(tpreds.shape)
     return score_fn(clf.predict(xdata), ydata)
 
 def get_uncalibrated_probas(clf, xdata, classifier):

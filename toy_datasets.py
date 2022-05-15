@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
 def gen_simple_binary_data(mu_x = None, mu_y = None, N=1000, ndims=2):
     
     x0 = np.random.randn(N, ndims) 

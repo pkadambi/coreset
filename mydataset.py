@@ -1,5 +1,5 @@
 from sklearn.model_selection import train_test_split
-
+import numpy as np
 
 class MyDataset:
     def __init__(self, x_data, y_data, tr_frac, cal_frac, te_frac):
@@ -12,7 +12,7 @@ class MyDataset:
         '''
         self.xdata = x_data
         self.ydata = y_data        
-        self.gen_splits(train_fra)
+        self.gen_splits(tr_frac)
     
     def gen_splits(self, train_frac = .7, calib_frac = .1, test_frac = .2):
         #TODO: this should be part of the init function somehow, since this kind of thing should be handled when the datset is created
