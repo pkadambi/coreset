@@ -7,14 +7,19 @@ import torchvision.transforms as transforms
 from toy_datasets import *
 import os
 import argparse
+from active_trainer import get_sampling_distributions, weight_based_sample
 
 HIDDEN_SIZES = [32, 32, 48, 48, 32]
 parser = argparse.ArgumentParser()
-parser.add_argument('--teacher_dir', default='./models/synthetic_teacher_tmp')
+parser.add_argument('--teacher_dir', default='./models/synthetic_teacher')
+parser.add_argument('--student_dir', default='./models/synthetic_student')
+parser.add_argument('--dataset_dir', default='./datasets/')
+parser.add_argument('--student_labels', default='teacher_hardlabels', help="choose between 'hardlabels', 'teacher_hardlabels', 'posterior', or 'estim_posterior'")
+parser.add_argument('--retrain', action='store_true')
 parser.add_argument('--temperature', default=1.)
 parser.add_argument('--ntrain', default=15000)
 parser.add_argument('--ntest', default=10000)
-parser.add_argument('--n_epochs', default=125)
+parser.add_argument('--n_epochs', default=150)
 parser.add_argument('--lr', default=.001)
 parser.add_argument('--eval_steps', default=1000)
 parser.add_argument('--report_steps', default=50)
@@ -22,7 +27,6 @@ parser.add_argument('--batch_size', default=128)
 parser.add_argument('--dataset', default='sinusoid')
 args = parser.parse_args()
 
-teacher_model_dir = args.teacher_dir
 TEMP = args.temperature
 NTRAIN = args.ntrain
 NTEST = args.ntest
@@ -31,7 +35,13 @@ LR = args.lr
 REPORT_STEPS = args.report_steps
 EVAL_STEPS = args.eval_steps
 BATCH_SIZE = args.batch_size
-dataset = args.dataset
+DATASET = args.dataset
+DATASET_DIR = os.path.join(args.dataset_dir, DATASET)
+STUDENT_TRAIN_LABELS = args.student_labels
+teacher_model_dir = os.path.join(args.teacher_dir,  args.dataset)
+student_model_dir = os.path.join(args.student_dir, args.dataset)
+
+
 # TODO, make this configurable somehow
 class BaseMLP(nn.Module):
     def __init__(self, hidden_sizes, in_size, out_size):
@@ -50,8 +60,8 @@ class BaseMLP(nn.Module):
         return self.model(x)
 
 class SyntheticDataset(Dataset):
-    def __init__(self, xnumpy, y_hardlabels=None, yposterior=None, num_classes=2, estim_posterior=None, standardize=True,
-                 mu=None, std=None): #pass mu=None for eval dataset
+    def __init__(self, xnumpy, y_hardlabels=None, yposterior=None, num_classes=2, estim_posterior=None,
+                 teacher_hard_labels=None, standardize=True, mu=None, std=None): #pass mu=None for eval dataset
         self.x = xnumpy
         self.transform = transforms.ToTensor()
         if standardize:
@@ -72,7 +82,7 @@ class SyntheticDataset(Dataset):
         self.one_hot_hardlabels = F.one_hot(torch.Tensor(self.hardlabels).to(torch.int64), num_classes=num_classes)
         self.posterior = None if yposterior is None else yposterior
         self.estim_posterior = None if estim_posterior is None else estim_posterior
-
+        self.teacher_hardlabels = None if teacher_hard_labels is None else teacher_hard_labels.astype('int')
     def __len__(self):
         return len(self.xdata)
 
@@ -86,12 +96,15 @@ class SyntheticDataset(Dataset):
             example['posterior'] =  torch.Tensor(self.posterior[item])
         if self.estim_posterior is not None:
             example['estim_posterior'] = torch.Tensor(self.estim_posterior[item])
+        if self.teacher_hardlabels is not None:
+            example['teacher_hardlabels'] = torch.Tensor(self.teacher_hardlabels[item]).to(torch.int64)
         return example
 
 def get_train_test_split():
     pass
 
-def train_model_hard_labels(model, train_dataloader, test_dataloader, report_step, n_epochs, eval_step):
+def train_model_hard_labels(model, train_dataloader, test_dataloader, report_step, n_epochs, eval_step,
+                            hardlabel_batchkey='hardlabels'):
     print('********************************************************************')
     print('**************** START: Training Model w/ HardLabels ****************')
     model.train()
@@ -107,7 +120,7 @@ def train_model_hard_labels(model, train_dataloader, test_dataloader, report_ste
     for epochnum in range(n_epochs):
         for ii, batchdata in enumerate(train_dataloader):
             xbatch = batchdata['xdata']
-            ylabels = batchdata['hardlabels'].squeeze()
+            ylabels = batchdata[hardlabel_batchkey].squeeze()
             output = model(xbatch)
             loss = xentropy_criterion(output, ylabels)
             optimizer.zero_grad()
@@ -150,7 +163,7 @@ def train_softlabels(model, train_dataloader, test_dataloader, batchlabel_key, n
     for epochnum in range(n_epochs):
         for ii, batchdata in enumerate(train_dataloader):
             xbatch = batchdata['xdata']
-            yhardlabels = batchdata['hardlabels'].view(-1, 1)
+            yhardlabels = batchdata['hardlabels'].squeeze()
             train_targets = batchdata[batchlabel_key]
 
             output = model(xbatch)
@@ -166,7 +179,7 @@ def train_softlabels(model, train_dataloader, test_dataloader, batchlabel_key, n
             optimizer.step()
 
             if ii % report_step==0:
-                trainacc = accuracy(output, ylabels).item()
+                trainacc = accuracy(output, yhardlabels).item()
                 lossval = train_loss.item()
 
                 print('Step [%d/%d]| Epoch[%d/%d]| Train Loss (SoftLabel) [%.3f] |  Train Acc [%.3f]| Hard Label Xentropy [%.3f]' %
@@ -183,7 +196,8 @@ def train_softlabels(model, train_dataloader, test_dataloader, batchlabel_key, n
     print('FINAL RESULTS')
     print('Test Acc [%.3f]: | Test Loss [%.3f]' % (results['accuracy'], results['label_xent']))
     print('**************** END: Training Model w/ SoftLabels ****************')
-    print('********************************************************************')
+    print('*******************************************************************')
+    return model
 
 def get_model_logits(model, dataloader):
     model.eval()
@@ -280,6 +294,8 @@ def run_evaluation(dataloader, model):
 
     return results
 
+
+
 def train_pytorch_model(model, xdata, ylabels, optimizer,
                         train_iters=1000, learning_rate=.001, temperature=1):
     kd_loss = loss_fn_kd
@@ -304,20 +320,78 @@ def train_pytorch_model(model, xdata, ylabels, optimizer,
         #shuffle dataloader
     pass
 
-def train_active(model, xdata, ylabels, train_iters, learning_rate, temperature):
 
-
-    # step 1: generate dataset
-
-    # step 2:
-
-    # step 3:
-
-    # step 4:
-
-    # step 5:
-
+def train_active_sampling_distribution_full_knowledge():
     pass
+
+def split_dataset_in_two(torchdataset, length, return_inds=False):
+    # split1, split2 = torch.utils.data.random_split(torchdataset, lengths=lengths)
+
+    mask = np.ones(len(torchdataset), dtype=bool)
+    samp1_inds = np.random.choice(np.arange(len(torchdataset)), size=length, replace=False)
+    # samp2_inds = np.random.choice(np.arange(len(torchdataset), ))
+    mask[samp1_inds] = False
+    dataset_subset1 = torch.utils.data.Subset(torchdataset, samp1_inds)
+    dataset_subset2 = torch.utils.data.Subset(torchdataset, np.argwhere(mask))
+
+    if return_inds:
+        return dataset_subset1, dataset_subset2, samp1_inds
+    else:
+        return dataset_subset1, dataset_subset2
+
+def train_active(sample_step, n_seed, temperature, train_dataset, soft_test_dataset, posterior_key,
+                 train_hard=False, uniform_frac=.1):
+    '''
+
+    train_dataset: should be the dataset with posterior
+
+    '''
+    # step 1: split the dataset, get a base dataset and a sampling dataset
+    # NTRAIN
+    soft_test_dataloader = torch.utils.data.DataLoader(dataset=soft_test_dataset, batch_size=BATCH_SIZE, num_workers=4,
+                                                       pin_memory=True)
+
+    active_train_dataset, query_datset, sampled_indices = split_dataset_in_two(train_dataset, length=n_seed, return_inds=True) #uniform sample a seed dataset
+    sample_sizes = np.arange(n_seed, NTRAIN+sample_step, step=sample_step)
+    test_accuracies = []
+    hard_label_xents = []
+    posterior_kldiv = []
+    for samp_size in sample_sizes:
+        # begin active learning loop
+        # Active 0: Create the dataloaders
+
+        active_train_dataloader = torch.utils.data.DataLoader(dataset=active_train_dataset, batch_size=BATCH_SIZE, num_workers=4,
+                                                            pin_memory=True)
+        # Active 1: train the model on the uncovered samples
+        student_model = BaseMLP(out_size=2, in_size=2, hidden_sizes=HIDDEN_SIZES)
+        if train_hard:
+            trained_student_model = train_model_hard_labels(model=student_model, train_dataloader=active_train_dataloader,
+                                                            test_dataloader=test_dataloader, report_step=REPORT_STEPS,
+                                                            eval_step=EVAL_STEPS, n_epochs=NEPOCHS)
+        else:
+            trained_student_model = train_softlabels(model=student_model, train_dataloader=active_train_dataloader,
+                                             test_dataloader=soft_test_dataloader, batchlabel_key=posterior_key,
+                                             n_epochs=NEPOCHS, eval_step=EVAL_STEPS, report_step=REPORT_STEPS,
+                                             temperature=1)
+
+        # Active 2: Get results from the model
+        results = run_evaluation(dataloader=soft_test_dataloader, model=trained_student_model)
+        test_accuracies.append(results['accuracy'])
+        hard_label_xents.append(results['label_xent'].item())
+        posterior_kldiv.append(results['posterior_kldiv'].item())
+
+        # Active 3: calculate the weights for the samples based on the knn rule and the posterior value
+        sampling_distributions = get_sampling_distributions(soft_train_dataset.xdata, soft_train_dataset.posterior, k=500)
+        sampling_weights = sampling_distributions['variance'].ravel()
+        newly_chosen_inds = weight_based_sample(sampling_distribution=sampling_weights, top_k=sample_step,
+                                                ignore_inds=sampled_indices, uniform_frac=uniform_frac)
+        # Active 4: update the selected_indices
+        sampled_indices = np.concatenate([sampled_indices, newly_chosen_inds])
+        active_train_dataset = torch.utils.data.Subset(train_dataset, sampled_indices)
+
+    return sample_sizes, test_accuracies, hard_label_xents, posterior_kldiv
+
+
 
 def calculate_posterior(model, xdata):
     pass
@@ -368,6 +442,7 @@ def loss_fn_smooth_labels(model_logits, target_values, targetsprobas=False):
 
 if __name__ == "__main__":
     teacher_model_filepath = os.path.join(teacher_model_dir, 'teacher.mdl')
+    trained_student_filepath_fulldata = os.path.join(student_model_dir, 'student_full_data.mdl')
 
     # Load Data
     # from classifier_utils import *
@@ -381,19 +456,36 @@ if __name__ == "__main__":
         return xdata, y_posterior, ylabel
 
     ''' Step 1: Generate training/testing data'''
-    if dataset=='gaussian':
+    dataset_path = os.path.join(DATASET_DIR, 'dataset.pkl')
+
+    if DATASET=='gaussian':
         xdata0, xdata1, ylabels = gen_simple_binary_data(mu_x=0, mu_y=4, N=10000, ndims=2)
         xtrain = np.vstack([xdata0, xdata1])
 
         xdata0, xdata1, ytest = gen_simple_binary_data(mu_x=0, mu_y=4, N=1000, ndims=2)
         xtest = np.vstack([xdata0, xdata1])
 
-    elif dataset=='sinusoid':
-        xtrain, y_posterior, ylabels = generate_samples(NTRAIN)
-        xtest, y_posterior_test, ytest = generate_samples(NTEST)
+    elif DATASET=='sinusoid':
 
-        y_posterior = np.vstack([1-y_posterior, y_posterior]).T
-        y_posterior_test = np.vstack([1-y_posterior_test, y_posterior_test]).T
+        if not os.path.isdir(DATASET_DIR):
+            os.makedirs(DATASET_DIR, exist_ok=True)
+            xtrain, y_posterior, ylabels = generate_samples(NTRAIN)
+            xtest, y_posterior_test, ytest = generate_samples(NTEST)
+
+            y_posterior = np.vstack([1-y_posterior, y_posterior]).T
+            y_posterior_test = np.vstack([1-y_posterior_test, y_posterior_test]).T
+
+            data = {'train': {}, 'test': {}}
+            data['train']['xtrain'], data['train']['y_posterior'], data['train']['ylabels'] = xtrain, y_posterior, ylabels
+            data['test']['xtest'], data['test']['y_posterior_test'], data['test']['ytest'] = xtest, y_posterior_test, ytest
+            torch.save(data, dataset_path)
+
+        else:
+            print('Loaded dataset from:\t', dataset_path)
+            data = torch.load(os.path.join(dataset_path))
+            xtrain, y_posterior, ylabels = data['train']['xtrain'], data['train']['y_posterior'], data['train']['ylabels']
+            xtest, y_posterior_test, ytest = data['test']['xtest'], data['test']['y_posterior_test'], data['test']['ytest']
+
 
     ''' Step 2: Estimate posterior '''
 
@@ -411,39 +503,62 @@ if __name__ == "__main__":
 
     ''' Step 3: Train Teacher model if not exists'''
     teacher_model = BaseMLP(hidden_sizes=HIDDEN_SIZES, in_size=2, out_size=2)
-    if not os.path.isdir(teacher_model_dir):
-        os.makedirs(teacher_model_dir, exist_ok=True)
+
 
     if not os.path.exists(teacher_model_filepath):
         trained_teacher_model = train_model_hard_labels(model=teacher_model, train_dataloader=train_dataloader,
                                                         test_dataloader=test_dataloader, report_step=REPORT_STEPS,
                                                         eval_step=EVAL_STEPS, n_epochs=NEPOCHS)
         # trained_teacher_model.save(teacher_model_filepath)
+        if not os.path.isdir(teacher_model_dir):
+            os.makedirs(teacher_model_dir, exist_ok=True)
         torch.save({'model_state_dict': trained_teacher_model.state_dict()}, teacher_model_filepath)
     else:
         checkpoint = torch.load(teacher_model_filepath)
         trained_teacher_model = BaseMLP(hidden_sizes=HIDDEN_SIZES, in_size=2, out_size=2)
         trained_teacher_model.load_state_dict(checkpoint['model_state_dict'])
+        results = run_evaluation(dataloader = test_dataloader, model = trained_teacher_model)
+        print('*******************************************************************')
+        print('********************* Loaded Teacher Model ************************')
+        print('*************************** Accuracy ******************************')
+        print('Test Acc [%.3f]| Label Xentropy [%.3f]' % (results['accuracy'], results['label_xent']))
+        print('*******************************************************************')
+
 
     '''Step 4: Train student with full dataset'''
     student_model = BaseMLP(hidden_sizes=HIDDEN_SIZES, in_size=2, out_size=2)
 
-    trlogits, trprobas = get_model_logits(dataloader=test_dataloader, model=trained_teacher_model)
-    telogits, teprobas = get_model_logits(dataloader=test_dataloader, model=trained_teacher_model)
-    soft_train_dataset = SyntheticDataset(xnumpy=xtrain, y_hardlabels=ylabels, yposterior=trprobas, estim_posterior=None,
-                                          standardize=True, mu=None, std=None)
-    soft_test_dataset = SyntheticDataset(xnumpy=xtest, y_hardlabels=ylabels, yposterior=teprobas, estim_posterior=None,
+    train_logits, train_probas = get_model_logits(dataloader=train_dataloader, model=trained_teacher_model)
+    test_logits, test_probas = get_model_logits(dataloader=test_dataloader, model=trained_teacher_model)
+    teacher_hard_labels = np.argmax(train_logits, axis=1).reshape(-1, 1)
+    soft_train_dataset = SyntheticDataset(xnumpy=xtrain, y_hardlabels=ylabels, yposterior=train_probas, estim_posterior=None,
+                                          teacher_hard_labels=teacher_hard_labels, standardize=True, mu=None, std=None)
+    soft_test_dataset = SyntheticDataset(xnumpy=xtest, y_hardlabels=ytest, yposterior=test_probas, estim_posterior=None,
                                          standardize=True, mu=soft_train_dataset.mu, std=soft_train_dataset.std)
     soft_train_dataloader = torch.utils.data.DataLoader(dataset=soft_train_dataset, batch_size=BATCH_SIZE, num_workers=4,
                                                         pin_memory=True)
     soft_test_dataloader = torch.utils.data.DataLoader(dataset=soft_test_dataset, batch_size=BATCH_SIZE, num_workers=4,
                                                        pin_memory=True)
-    trained_student_model = train_softlabels(model=student_model, train_dataloader=soft_train_dataloader,
-                                             test_dataloader=soft_test_dataloader, batchlabel_key='posterior',
-                                             n_epochs=NEPOCHS, eval_step=EVAL_STEPS, report_step=REPORT_STEPS,
-                                             temperature=1)
-    '''Step 5: Active train student model'''
+    if not os.path.isfile(trained_student_filepath_fulldata):
 
+        if 'posterior' in STUDENT_TRAIN_LABELS:
+            trained_student_model = train_softlabels(model=student_model, train_dataloader=soft_train_dataloader,
+                                                     test_dataloader=soft_test_dataloader, batchlabel_key='posterior',
+                                                     n_epochs=NEPOCHS, eval_step=EVAL_STEPS, report_step=REPORT_STEPS,
+                                                     temperature=1)
+        elif 'hardlabels' in STUDENT_TRAIN_LABELS:
+            trained_student_model = train_model_hard_labels(model=student_model, train_dataloader=soft_train_dataloader,
+                                                          test_dataloader=soft_test_dataloader, hardlabel_batchkey=STUDENT_TRAIN_LABELS,
+                                                          n_epochs=NEPOCHS, eval_step=EVAL_STEPS, report_step=REPORT_STEPS)
+        if not os.path.exists(student_model_dir):
+            os.makedirs(student_model_dir, exist_ok=True)
+        torch.save({'model_state_dict': trained_student_model.state_dict()}, trained_student_filepath_fulldata)
+    # save the datasets to avoid more mismatch
+
+    '''Step 5: Active train student model'''
+    samp_size, acc, xent, kldivs = train_active(sample_step=250, n_seed=250, temperature=1, train_dataset=soft_train_dataset,
+                                        soft_test_dataset=soft_test_dataset, posterior_key='posterior',
+                                        train_hard=False, uniform_frac=.1)
 
     pass
 
